@@ -1,0 +1,21 @@
+{
+  "name": "img2cal_step",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google-cloud/vision": "^4.3.2",
+    "axios": "^1.7.9",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "ical-generator": "^8.0.1",
+    "luxon": "^3.5.0",
+    "openai": "^4.76.2"
+  }
+}
