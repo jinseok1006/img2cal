@@ -1,183 +1,183 @@
 {
-    "Comment": "JBNU 게시물 크롤링, 분류 및 iCal 생성 상태 머신",
-    "StartAt": "FetchPosts",
-    "States": {
-      "FetchPosts": {
-        "Type": "Task",
-        "Resource": "arn:aws:lambda:ap-northeast-2:354918370034:function:img2cal_step_posts_crawler",
-        "ResultPath": "$.fetchResult",
-        "Next": "ProcessPosts"
+  "Comment": "JBNU 게시물 크롤링, 분류 및 iCal 생성 상태 머신",
+  "StartAt": "FetchPosts",
+  "States": {
+    "FetchPosts": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-northeast-2:354918370034:function:img2cal_step_posts_crawler",
+      "ResultPath": "$.fetchResult",
+      "Next": "ProcessPosts"
+    },
+    "ProcessPosts": {
+      "Type": "Map",
+      "ItemsPath": "$.fetchResult.posts",
+      "MaxConcurrency": 10,
+      "Parameters": {
+        "post.$": "$$.Map.Item.Value"
       },
-      "ProcessPosts": {
-        "Type": "Map",
-        "ItemsPath": "$.fetchResult.posts",
-        "MaxConcurrency": 10,
-        "Parameters": {
-          "post.$": "$$.Map.Item.Value"
-        },
-        "Iterator": {
-          "StartAt": "ProcessPost",
-          "States": {
-            "ProcessPost": {
-              "Type": "Task",
-              "Resource": "arn:aws:lambda:ap-northeast-2:354918370034:function:img2cal_step_detail_crawler",
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "States.ALL"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 3,
-                  "BackoffRate": 2
-                }
-              ],
-              "Catch": [
-                {
-                  "ErrorEquals": [
-                    "States.ALL"
-                  ],
-                  "ResultPath": "$.errorInfo",
-                  "Next": "MarkAsFailed"
-                }
-              ],
-              "Next": "CheckSkipCondition"
-            },
-            "CheckSkipCondition": {
-              "Type": "Choice",
-              "Choices": [
-                {
-                  "Variable": "$.skipped",
-                  "BooleanEquals": true,
-                  "Next": "SkipDetailProcessing"
-                }
-              ],
-              "Default": "ClassifyPost"
-            },
-            "SkipDetailProcessing": {
-              "Type": "Pass",
-              "Result": {
-                "status": "skipped",
-                "reason": "Already processed or not required."
-              },
-              "End": true
-            },
-            "MarkAsFailed": {
-              "Type": "Pass",
-              "Parameters": {
-                "postId.$": "$.post.postId",
-                "status": "failed",
-                "error.$": "$.errorInfo.Cause"
-              },
-              "ResultPath": "$.processResult",
-              "End": true
-            },
-            "ClassifyPost": {
-              "Type": "Task",
-              "Resource": "arn:aws:lambda:ap-northeast-2:354918370034:function:img2cal_step_classifier",
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "States.ALL"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 3,
-                  "BackoffRate": 2
-                }
-              ],
-              "Catch": [
-                {
-                  "ErrorEquals": [
-                    "States.ALL"
-                  ],
-                  "ResultPath": "$.classifyError",
-                  "Next": "HandleClassifyPostError"
-                }
-              ],
-              "Next": "CheckVerificationStatus"
-            },
-            "HandleClassifyPostError": {
-              "Type": "Pass",
-              "Parameters": {
-                "postId.$": "$.post.postId",
-                "status": "failed",
-                "error.$": "$.classifyError.Cause"
-              },
-              "ResultPath": "$.processResult",
-              "End": true
-            },
-            "CheckVerificationStatus": {
-              "Type": "Choice",
-              "Choices": [
-                {
-                  "Variable": "$.status",
-                  "StringEquals": "approved",
-                  "Next": "Approved"
-                },
-                {
-                  "Variable": "$.status",
-                  "StringEquals": "needs_more_images",
-                  "Next": "ClassifyPost"
-                },
-                {
-                  "Variable": "$.status",
-                  "StringEquals": "rejected",
-                  "Next": "Rejected"
-                }
-              ],
-              "Default": "UnhandledStatus"
-            },
-            "Approved": {
-              "Type": "Pass",
-              "Result": {
-                "status": "approved"
-              },
-              "End": true
-            },
-            "Rejected": {
-              "Type": "Pass",
-              "Result": {
-                "status": "rejected"
-              },
-              "End": true
-            },
-            "UnhandledStatus": {
-              "Type": "Fail",
-              "Error": "UnhandledStatus",
-              "Cause": "The post verification status is unrecognized."
-            }
-          }
-        },
-        "ResultPath": "$.processResults",
-        "Next": "GenerateICal"
-      },
-      "GenerateICal": {
-        "Type": "Task",
-        "Resource": "arn:aws:lambda:ap-northeast-2:354918370034:function:img2cal_step_ical",
-        "Retry": [
-          {
-            "ErrorEquals": [
-              "States.ALL"
+      "Iterator": {
+        "StartAt": "ProcessPost",
+        "States": {
+          "ProcessPost": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:ap-northeast-2:354918370034:function:img2cal_step_detail_crawler",
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "States.ALL"
+                ],
+                "IntervalSeconds": 2,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              }
             ],
-            "IntervalSeconds": 5,
-            "MaxAttempts": 3,
-            "BackoffRate": 2
-          }
-        ],
-        "Catch": [
-          {
-            "ErrorEquals": [
-              "States.ALL"
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.ALL"
+                ],
+                "ResultPath": "$.errorInfo",
+                "Next": "MarkAsFailed"
+              }
             ],
-            "ResultPath": "$.error",
-            "Next": "HandleGenerateICalError"
+            "Next": "CheckSkipCondition"
+          },
+          "CheckSkipCondition": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "Variable": "$.skipped",
+                "BooleanEquals": true,
+                "Next": "SkipDetailProcessing"
+              }
+            ],
+            "Default": "ClassifyPost"
+          },
+          "SkipDetailProcessing": {
+            "Type": "Pass",
+            "Result": {
+              "status": "skipped",
+              "reason": "Already processed or not required."
+            },
+            "End": true
+          },
+          "MarkAsFailed": {
+            "Type": "Pass",
+            "Parameters": {
+              "postId.$": "$.post.postId",
+              "status": "failed",
+              "error.$": "$.errorInfo.Cause"
+            },
+            "ResultPath": "$.processResult",
+            "End": true
+          },
+          "ClassifyPost": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:ap-northeast-2:354918370034:function:img2cal_step_classifier",
+            "Retry": [
+              {
+                "ErrorEquals": [
+                  "States.ALL"
+                ],
+                "IntervalSeconds": 5,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.ALL"
+                ],
+                "ResultPath": "$.classifyError",
+                "Next": "HandleClassifyPostError"
+              }
+            ],
+            "Next": "CheckVerificationStatus"
+          },
+          "HandleClassifyPostError": {
+            "Type": "Pass",
+            "Parameters": {
+              "postId.$": "$.post.postId",
+              "status": "failed",
+              "error.$": "$.classifyError.Cause"
+            },
+            "ResultPath": "$.processResult",
+            "End": true
+          },
+          "CheckVerificationStatus": {
+            "Type": "Choice",
+            "Choices": [
+              {
+                "Variable": "$.status",
+                "StringEquals": "approved",
+                "Next": "Approved"
+              },
+              {
+                "Variable": "$.status",
+                "StringEquals": "needs_more_images",
+                "Next": "ClassifyPost"
+              },
+              {
+                "Variable": "$.status",
+                "StringEquals": "rejected",
+                "Next": "Rejected"
+              }
+            ],
+            "Default": "UnhandledStatus"
+          },
+          "Approved": {
+            "Type": "Pass",
+            "Result": {
+              "status": "approved"
+            },
+            "End": true
+          },
+          "Rejected": {
+            "Type": "Pass",
+            "Result": {
+              "status": "rejected"
+            },
+            "End": true
+          },
+          "UnhandledStatus": {
+            "Type": "Fail",
+            "Error": "UnhandledStatus",
+            "Cause": "The post verification status is unrecognized."
           }
-        ],
-        "End": true
+        }
       },
-      "HandleGenerateICalError": {
-        "Type": "Fail",
-        "Error": "ICalGenerationFailed",
-        "Cause": "Failed to generate iCal files."
-      }
+      "ResultPath": "$.processResults",
+      "Next": "GenerateICal"
+    },
+    "GenerateICal": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:ap-northeast-2:354918370034:function:img2cal_step_ical",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "HandleGenerateICalError"
+        }
+      ],
+      "End": true
+    },
+    "HandleGenerateICalError": {
+      "Type": "Fail",
+      "Error": "ICalGenerationFailed",
+      "Cause": "Failed to generate iCal files."
     }
   }
+}

@@ -5,7 +5,7 @@ const ical = require("ical-generator").default;
 const { DateTime } = require("luxon");
 
 // 환경 변수 설정
-const TABLE_NAME = "img2cal_step_jbnuPosts";
+const TABLE_NAME = "img2cal_step_final";
 const S3_BUCKET_NAME =  "img2cal-ical";
 
 // 이벤트 타입 정의
@@ -35,6 +35,7 @@ const s3 = new S3Client({ region: "ap-northeast-2" });
 
 // Helper 함수: 값이 "undefined" 문자열이거나 빈 문자열인 경우 null로 반환
 const sanitize = (value) => {
+  if(value===null) return null;
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   if (trimmed === "" || trimmed.toLowerCase() === "undefined") {
@@ -116,6 +117,10 @@ const determineEventTime = (calendarData, postId) => {
   }
   // 2. 접수일정이 없고 활동일정(activityPeriod)이 존재할 경우
   else if (actStartDt) {
+    if (actStartDt.hour === 0 && actStartDt.minute === 0) {
+      actStartDt = actStartDt.set({ hour: 9, minute: 0 });
+    }
+    
     startDt = actStartDt;
     if (actEndDt) {
 
