@@ -12,7 +12,7 @@ const axios = require("axios");
 require("dotenv").config();
 
 // 환경 변수 및 설정
-const DYNAMODB_TABLE_NAME = "img2cal_step_final";
+const DYNAMODB_TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
 
 // AWS 클라이언트 설정
 const dynamoDb = new DynamoDBClient({ region: "ap-northeast-2" });

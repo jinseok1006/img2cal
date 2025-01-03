@@ -5,7 +5,7 @@ const {
   GetItemCommand,
 } = require("@aws-sdk/client-dynamodb");
 const { marshall } = require("@aws-sdk/util-dynamodb");
-const { SQSClient, SendMessageCommand } = require("@aws-sdk/client-sqs");
+const { SQSClient } = require("@aws-sdk/client-sqs");
 const cheerio = require("cheerio");
 const axios = require("axios");
 require("dotenv").config();

@@ -3,10 +3,11 @@ const { DynamoDBDocumentClient, ScanCommand } = require("@aws-sdk/lib-dynamodb")
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const ical = require("ical-generator").default;
 const { DateTime } = require("luxon");
+require('dotenv').config();
 
 // 환경 변수 설정
-const TABLE_NAME = "img2cal_step_final";
-const S3_BUCKET_NAME =  "img2cal-ical";
+const TABLE_NAME = process.env.TABLE_NAME;
+const S3_BUCKET_NAME =  process.env.S3_BUCKET_NAME;
 
 // 이벤트 타입 정의
 const EVENT_TYPES = [
